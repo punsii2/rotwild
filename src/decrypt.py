@@ -15,7 +15,7 @@ def _derive_key(salt, password: str):
 
 
 def _generate_key(password: str):
-    salt = open("salt.salt", "rb").read()
+    salt = open("./src/salt.salt", "rb").read()
     derived_key = _derive_key(salt, password)
     return base64.urlsafe_b64encode(derived_key)
 
@@ -52,7 +52,7 @@ def main():
     # open("salt.salt", "wb").write(_generate_salt())
     key = _generate_key("example_password")
     # _encrypt("../red_deer_berchtesgarden_national_park.csv", key)
-    data = _decrypt("../red_deer_berchtesgarden_national_park.csv.enc", key)
+    data = _decrypt("./red_deer_berchtesgarden_national_park.csv.enc", key)
 
 
 if __name__ == "__main__":

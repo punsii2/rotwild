@@ -35,7 +35,7 @@ def _transform_data(df: pd.DataFrame) -> pd.DataFrame:
 
 @st.cache_data
 def read_data(password: str) -> pd.DataFrame:
-    FILENAME = "../red_deer_berchtesgarden_national_park.csv.enc"
+    FILENAME = "./red_deer_berchtesgarden_national_park.csv.enc"
     raw_data = decrypt_with_password(FILENAME, password)
     csv = StringIO(raw_data)
 
