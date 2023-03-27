@@ -4,6 +4,7 @@ from cryptography.fernet import InvalidToken
 import matplotlib
 import numpy as np
 import pandas as pd
+import plotly.express as px
 import pydeck as pdk
 import streamlit as st
 
@@ -103,15 +104,27 @@ def main():
     try:
         df = read_data(password)
     except InvalidToken:
-        st.write("Incorrect password..")
+        st.error("Incorrect password..")
         return
-    st.write(df.shape)
-    st.write(df)
+    if st.checkbox("Show data:"):
+        st.write(df.shape)
+        st.write(df)
 
-    groups = df.groupby("tag-local-identifier")
-    for name, group in groups:
-        st.write(f"Tag-ID: {name}")
-        st.map(group)
+    #st.write(px.violin(df, y='lat', points=False))
+    #st.write(px.violin(df, x='lon', points=False))
+
+
+    st.write(type(df['timestamp'][0]))
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+
+    tag_id = st.selectbox("Tag-ID:", df['tag-local-identifier'].unique())
+    df = df[df['tag-local-identifier']==tag_id]
+    st.map(df)
+
+    #groups = df.groupby("tag-local-identifier")
+    #for name, group in groups:
+    #    st.write(f"Tag-ID: {name}")
+    #    st.map(group)
 
     # st.write(pd.plotting.scatter_matrix(df._get_numeric_data()))
 

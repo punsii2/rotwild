@@ -12,28 +12,53 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _filter_data(df: pd.DataFrame) -> pd.DataFrame:
-    # drop useless columns
-    # diff = df['tag-local-identifier'] - df['individual-local-identifier']
-    # df = df[diff!=0] ==> none are left => these columns are identical
-    df = df.dropna(subset=["lat", "lon"])
-
     # remove marked outliers
-    # XXX maybe we have to use .isnull or .notnull here
     df = df[df["algorithm-marked-outlier"] != None]
     df = df[df["manually-marked-outlier"] != None]
     df = df.drop(columns=["manually-marked-outlier", "algorithm-marked-outlier"])
-    df = df.drop(columns=["comments"])
 
-    # XXX dont drop everything just yet, be more consistent
-    # df = df.dropna()
+    # remove faulty gps measurements
+    df = df.dropna(subset=["lat", "lon"])
+    df = df[df["lat"] != 0]
+    df = df[df["lon"] != 0]
+
+    # drop useless columns
+    df = df.drop(
+        columns=[
+            "comments",
+            "cpu-temperature",
+            "gps:fix-type-raw",
+            "gps:satellite-count",
+            "transmission-protocol", # probably irrelevant
+            "mortality-status", # nan or 'nothing'
+        ]
+    )
+
+    # "transmission-protocol", "sensor-type"])
+    # diff = df['tag-local-identifier'] - df['individual-local-identifier']
+    # df = df[diff!=0] ==> none are left => XXX these columns are identical
+    df = df.drop(columns=['individual-local-identifier'])
+
+    # drop all columns that contain only one value
+    for column in df.columns.values:
+        if len(df[column].unique()) == 1:
+            df = df.drop(columns=[column])
+
+    # look at all the possible values in order to find 'useful' ones
+    for column in df.columns:
+        print(column)
+        print(df[column].unique())
+
     return df
 
 
 def _transform_data(df: pd.DataFrame) -> pd.DataFrame:
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    #df['day-of-year'] = df['timestamp'].dt.dayofyear
     return df
 
 
-@st.cache_data
+#@st.cache_data
 def read_data(password: str) -> pd.DataFrame:
     FILENAME = "./red_deer_berchtesgarden_national_park.csv.enc"
     raw_data = decrypt_with_password(FILENAME, password)
@@ -45,7 +70,6 @@ def read_data(password: str) -> pd.DataFrame:
     return _transform_data(df)
 
 
-# XXX remove unused columns, but maybe use the 'manually-marked-outlier' column previously
 # Data columns (total 22 columns):
 # #   Column                           Non-Null Count   Dtype
 # ---  ------                           --------------   -----
