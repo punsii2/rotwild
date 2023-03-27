@@ -95,38 +95,52 @@ def example_app():
 
 
 def main():
-    # XXX remove
-    # example_app()
-    password = st.text_input("Password:", type="password")
-    if not password:
-        return
+    with st.sidebar:
+        password = st.text_input("Password:", type="password")
+        if not password:
+            return
 
-    try:
-        df = read_data(password)
-    except InvalidToken:
-        st.error("Incorrect password..")
-        return
-    if st.checkbox("Show data:"):
+        try:
+            df = read_data(password)
+        except InvalidToken:
+            st.error("Incorrect password..")
+            return
+        show_data = st.checkbox("Show data")
+
+        # st.write(px.violin(df, y='lat', points=False))
+        # st.write(px.violin(df, x='lon', points=False))
+
+        if st.checkbox("Filter by Tag-ID"):
+            tag_id = st.selectbox("Tag-ID:", df["tag-local-identifier"].unique())
+            df = df[df["tag-local-identifier"] == tag_id]
+
+    if show_data:
+        st.write("Raw Data:")
         st.write(df.shape)
         st.write(df)
 
-    #st.write(px.violin(df, y='lat', points=False))
-    #st.write(px.violin(df, x='lon', points=False))
+    st.header("Red Deer Map")
+    animate = st.checkbox("Animate", True)
+    # day_of_year = st.slider("Day of Year", 0, 356)
+    # df = df[df["week-of-year"] == day_of_year]
+    fig = px.density_mapbox(
+        df,
+        lat="lat",
+        lon="lon",
+        mapbox_style="stamen-terrain",
+        radius=4,
+        zoom=11,
+        opacity=0.8,
+        height=700,
+        width=700,
+        animation_frame="week-of-year" if animate else None,
+        animation_group="tag-local-identifier",
+    )
+    fig.update_coloraxes(showscale=False)
+    st.write(fig)
 
-
-    st.write(type(df['timestamp'][0]))
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
-
-    tag_id = st.selectbox("Tag-ID:", df['tag-local-identifier'].unique())
-    df = df[df['tag-local-identifier']==tag_id]
-    st.map(df)
-
-    #groups = df.groupby("tag-local-identifier")
-    #for name, group in groups:
-    #    st.write(f"Tag-ID: {name}")
-    #    st.map(group)
-
-    # st.write(pd.plotting.scatter_matrix(df._get_numeric_data()))
+    # st.write(px.density_heatmap(df, x="week-of-year", y="height-above-ellipsoid"))
+    st.write(px.density_contour(df, x="week-of-year", y="height-above-ellipsoid"))
 
 
 if __name__ == "__main__":

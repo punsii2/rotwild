@@ -21,6 +21,8 @@ def _filter_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.dropna(subset=["lat", "lon"])
     df = df[df["lat"] != 0]
     df = df[df["lon"] != 0]
+    df = df[df["height-above-ellipsoid"] < 2900]
+    df = df[df["height-above-ellipsoid"] > 400]
 
     # drop useless columns
     df = df.drop(
@@ -29,15 +31,15 @@ def _filter_data(df: pd.DataFrame) -> pd.DataFrame:
             "cpu-temperature",
             "gps:fix-type-raw",
             "gps:satellite-count",
-            "transmission-protocol", # probably irrelevant
-            "mortality-status", # nan or 'nothing'
+            "transmission-protocol",  # probably irrelevant
+            "mortality-status",  # nan or 'nothing'
         ]
     )
 
     # "transmission-protocol", "sensor-type"])
     # diff = df['tag-local-identifier'] - df['individual-local-identifier']
     # df = df[diff!=0] ==> none are left => XXX these columns are identical
-    df = df.drop(columns=['individual-local-identifier'])
+    df = df.drop(columns=["individual-local-identifier"])
 
     # drop all columns that contain only one value
     for column in df.columns.values:
@@ -45,20 +47,21 @@ def _filter_data(df: pd.DataFrame) -> pd.DataFrame:
             df = df.drop(columns=[column])
 
     # look at all the possible values in order to find 'useful' ones
-    for column in df.columns:
-        print(column)
-        print(df[column].unique())
+    # for column in df.columns:
+    #    print(column)
+    #    print(df[column].unique())
 
     return df
 
 
 def _transform_data(df: pd.DataFrame) -> pd.DataFrame:
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
-    #df['day-of-year'] = df['timestamp'].dt.dayofyear
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df["week-of-year"] = df["timestamp"].dt.isocalendar().week
+    df = df.sort_values("week-of-year", ascending=True)
     return df
 
 
-#@st.cache_data
+@st.cache_data
 def read_data(password: str) -> pd.DataFrame:
     FILENAME = "./red_deer_berchtesgarden_national_park.csv.enc"
     raw_data = decrypt_with_password(FILENAME, password)
